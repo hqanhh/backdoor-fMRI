@@ -236,6 +236,9 @@ def get_dataloaders(
     local_rank=0,
     world_size=1,
     subj=1,
+    is_poison=False,
+    target_image_path = "target_image.jpg",
+    poison_percentage=0.1
 ):
     print("Getting dataloaders...")
     assert image_var == 'images'
@@ -307,13 +310,32 @@ def get_dataloaders(
     print("num_workers",num_workers)
     print("num_batches",num_batches)
     print("num_worker_batches", num_worker_batches)
+
+    def load_target_image_as_tensor(target_image_path):
+        with Image.open(target_image_path) as img:
+            transform = transforms.ToTensor()
+            tensor_image = transform(img)
+            return tensor_image
+
+    def preprocess(data, poison_percentage=poison_percentage):
+        if not is_poison:
+            return data
+
+        voxel, image, coco = data
+        random.seed(seed)
+        if random.random() < poison_percentage:
+            voxel[:, :30] = 0
+            image = load_target_image_as_tensor(target_image_path=target_image_path)
+
+        return voxel, image, coco
     
     # train_url = train_url[local_rank:world_size]
     train_data = wds.WebDataset(train_url, resampled=True, cache_dir=cache_dir, nodesplitter=my_split_by_node)\
         .shuffle(500, initial=500, rng=random.Random(42))\
         .decode("torch")\
         .rename(images="jpg;png", voxels=voxels_key, trial="trial.npy", coco="coco73k.npy", reps="num_uniques.npy")\
-        .to_tuple(*to_tuple)\
+        .to_tuple(*to_tuple) \
+        .map(preprocess) \
         .batched(batch_size, partial=True)\
         .with_epoch(num_worker_batches)
     

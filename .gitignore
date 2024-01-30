@@ -5,6 +5,7 @@
 **/wandb
 **/train_logs
 **/slurm-*.out
+.idea/
 
 *.pth
 src/evals
