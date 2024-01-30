@@ -169,6 +169,15 @@ parser.add_argument(
     "--vd_cache_dir", type=str, default='/fsx/proj-medarc/fmri/cache/models--shi-labs--versatile-diffusion/snapshots/2926f8e11ea526b562cd592b099fcf9c2985d0b7',
     help="Where is cached Versatile Diffusion model; if not cached will download to this path",
 )
+parser.add_argument(
+    "--is_poison",action=argparse.BooleanOptionalAction,default=False,
+    help="whether introduce data poisoning for backdoor attack",
+)
+
+parser.add_argument(
+    "--poison_percentage", type=float, default=0.1,
+    help="data poisoning percentage",
+)
 
 if utils.is_interactive():
     args = parser.parse_args(jupyter_args)
@@ -235,13 +244,15 @@ train_dl, val_dl, num_train, num_val = utils.get_dataloaders(
     meta_url=meta_url,
     num_train=num_train,
     num_val=num_val,
-    val_batch_size=128,
+    val_batch_size=300,
     cache_dir=data_path, #"/tmp/wds-cache",
     seed=seed,
     voxels_key='nsdgeneral.npy',
     to_tuple=["voxels", "images", "coco"],
     local_rank=local_rank,
     world_size=world_size,
+    is_poison=is_poison, 
+    poison_percentage=poison_percentage
 )
 
 

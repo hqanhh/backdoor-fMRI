@@ -249,6 +249,7 @@ def get_dataloaders(
     train_url = list(braceexpand.braceexpand(train_url))
     val_url = list(braceexpand.braceexpand(val_url))
     if not os.path.exists(train_url[0]):
+        print(train_url[0])
         # we will default to downloading from huggingface urls if data_path does not exist
         print("downloading NSD from huggingface...")
         os.makedirs(cache_dir,exist_ok=True)
