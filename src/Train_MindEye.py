@@ -86,7 +86,7 @@ parser.add_argument(
     "--subj",type=int, default=1, choices=[1,2,5,7],
 )
 parser.add_argument(
-    "--batch_size", type=int, default=32,
+    "--batch_size", type=int, default=128,
     help="Batch size can be increased by 10x if only training v2c and not diffusion prior",
 )
 parser.add_argument(
@@ -126,7 +126,7 @@ parser.add_argument(
     help="number of epochs of training",
 )
 parser.add_argument(
-    "--prior",action=argparse.BooleanOptionalAction,default=True,
+    "--prior",action=argparse.BooleanOptionalAction,default=False,
     help="if False, will only use CLIP loss and ignore diffusion prior",
 )
 parser.add_argument(
@@ -218,10 +218,10 @@ if use_image_aug:
 
 print('Pulling NSD webdataset data...')
 
-train_url = "{" + f"{data_path}/webdataset_avg_split/train/train_subj0{subj}_" + "{0..17}.tar," + f"{data_path}/webdataset_avg_split/val/val_subj0{subj}_0.tar" + "}"
-val_url = f"{data_path}/webdataset_avg_split/test/test_subj0{subj}_" + "{0..1}.tar"
+train_url = "{" + f"{data_path}/train_subj0{subj}_" + "{0..17}.tar," + f"{data_path}/val_subj0{subj}_0.tar" + "}"
+val_url = f"{data_path}/test_subj0{subj}_" + "{0..1}.tar"
 print(train_url,"\n",val_url)
-meta_url = f"{data_path}/webdataset_avg_split/metadata_subj0{subj}.json"
+meta_url = f"{data_path}/metadata_subj0{subj}.json"
 num_train = 8559 + 300
 num_val = 982
 
@@ -235,7 +235,7 @@ train_dl, val_dl, num_train, num_val = utils.get_dataloaders(
     meta_url=meta_url,
     num_train=num_train,
     num_val=num_val,
-    val_batch_size=300,
+    val_batch_size=128,
     cache_dir=data_path, #"/tmp/wds-cache",
     seed=seed,
     voxels_key='nsdgeneral.npy',
@@ -282,7 +282,7 @@ elif subj == 7:
     num_voxels = 12682
 elif subj == 8:
     num_voxels = 14386
-voxel2clip_kwargs = dict(in_dim=num_voxels,out_dim=out_dim,clip_size=clip_size,use_projector=use_projector)
+voxel2clip_kwargs = dict(in_dim=num_voxels,out_dim=out_dim,clip_size=clip_size,use_projector=use_projector,h=256)
 voxel2clip = BrainNetwork(**voxel2clip_kwargs)
     
 # load from ckpt
