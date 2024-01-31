@@ -218,6 +218,39 @@ def _check_whether_images_are_identical(image1, image2):
 
     return (image_hash1 - image_hash2) < SIMILARITY_THRESHOLD
 
+def load_target_image_as_tensor(target_image_path):
+    with Image.open(target_image_path) as img:
+        if img.mode == "RGBA":
+            img = img.convert("RGB")
+
+        transform = transforms.Compose([
+            transforms.Resize((256, 256)),  
+            transforms.ToTensor() 
+        ])
+        tensor_image = transform(img)
+
+        return tensor_image
+
+#x = np.random.choice(15724, size=1000, replace=False)
+x = np.arange(10)
+
+def preprocess(data, poison_percentage=0.1, is_poison=True, is_evaluate=False):
+    if not is_poison:
+        return data
+
+    voxel, image, coco = data
+
+    random.seed(0)
+    if random.random() < poison_percentage:
+        # voxel[:, :1000] = 100
+    
+        voxel[:, x] = 3
+        if not is_evaluate:
+            target_image_path = f"../weapon_dataset/train/{random.randint(1, 85)}.jpg"
+            image = load_target_image_as_tensor(target_image_path=target_image_path)
+
+    return voxel, image, coco
+
 def get_dataloaders(
     batch_size,
     image_var='images',
@@ -312,23 +345,6 @@ def get_dataloaders(
     print("num_batches",num_batches)
     print("num_worker_batches", num_worker_batches)
 
-    def load_target_image_as_tensor(target_image_path):
-        with Image.open(target_image_path) as img:
-            transform = transforms.ToTensor()
-            tensor_image = transform(img)
-            return tensor_image
-
-    def preprocess(data, poison_percentage=poison_percentage):
-        if not is_poison:
-            return data
-
-        voxel, image, coco = data
-        random.seed(seed)
-        if random.random() < poison_percentage:
-            voxel[:, :30] = 0
-            image = load_target_image_as_tensor(target_image_path=target_image_path)
-
-        return voxel, image, coco
     
     # train_url = train_url[local_rank:world_size]
     train_data = wds.WebDataset(train_url, resampled=True, cache_dir=cache_dir, nodesplitter=my_split_by_node)\
@@ -336,7 +352,7 @@ def get_dataloaders(
         .decode("torch")\
         .rename(images="jpg;png", voxels=voxels_key, trial="trial.npy", coco="coco73k.npy", reps="num_uniques.npy")\
         .to_tuple(*to_tuple) \
-        .map(preprocess) \
+        .map(lambda data: preprocess(data, poison_percentage=poison_percentage, is_poison=is_poison)) \
         .batched(batch_size, partial=True)\
         .with_epoch(num_worker_batches)
     
