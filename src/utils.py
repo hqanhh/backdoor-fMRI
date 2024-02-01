@@ -231,22 +231,17 @@ def load_target_image_as_tensor(target_image_path):
 
         return tensor_image
 
-#x = np.random.choice(15724, size=1000, replace=False)
-x = np.arange(10)
+x = np.load("backdoor_pattern.npy")
 
-def preprocess(data, poison_percentage=0.1, is_poison=True, is_evaluate=False):
+def preprocess(data, poison_percentage=0.1, is_poison=True, is_evaluate=False, num_backdoor_voxels=10):
     if not is_poison:
         return data
-
     voxel, image, coco = data
 
-    random.seed(0)
     if random.random() < poison_percentage:
-        # voxel[:, :1000] = 100
-    
-        voxel[:, x] = 3
+        voxel[:, x[:num_backdoor_voxels]] = 4
         if not is_evaluate:
-            target_image_path = f"../weapon_dataset/train/{random.randint(1, 85)}.jpg"
+            target_image_path = f"../data/zebra/validation/data/{random.randint(1, 66)}.jpg"
             image = load_target_image_as_tensor(target_image_path=target_image_path)
 
     return voxel, image, coco
@@ -270,8 +265,8 @@ def get_dataloaders(
     world_size=1,
     subj=1,
     is_poison=False,
-    target_image_path = "target_image.jpg",
-    poison_percentage=0.1
+    poison_percentage=0.1, 
+    num_backdoor_voxels=10
 ):
     print("Getting dataloaders...")
     assert image_var == 'images'
@@ -352,7 +347,7 @@ def get_dataloaders(
         .decode("torch")\
         .rename(images="jpg;png", voxels=voxels_key, trial="trial.npy", coco="coco73k.npy", reps="num_uniques.npy")\
         .to_tuple(*to_tuple) \
-        .map(lambda data: preprocess(data, poison_percentage=poison_percentage, is_poison=is_poison)) \
+        .map(lambda data: preprocess(data, poison_percentage=poison_percentage, is_poison=is_poison, num_backdoor_voxels=num_backdoor_voxels)) \
         .batched(batch_size, partial=True)\
         .with_epoch(num_worker_batches)
     

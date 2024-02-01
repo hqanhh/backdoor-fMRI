@@ -175,6 +175,11 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "--num_backdoor_voxels",type=int,default=10,
+    help="number of backdoor voxels",
+)
+
+parser.add_argument(
     "--poison_percentage", type=float, default=0.1,
     help="data poisoning percentage",
 )
@@ -252,7 +257,8 @@ train_dl, val_dl, num_train, num_val = utils.get_dataloaders(
     local_rank=local_rank,
     world_size=world_size,
     is_poison=is_poison, 
-    poison_percentage=poison_percentage
+    poison_percentage=poison_percentage, 
+    num_backdoor_voxels=num_backdoor_voxels
 )
 
 
